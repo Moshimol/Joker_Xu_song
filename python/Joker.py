@@ -8,15 +8,14 @@ sys.setdefaultencoding('utf-8')
 import requests
 import re
 import os
-from lxml import etree
 import json
 from bs4 import BeautifulSoup
-import urllib2
 import glob
-import urllib
+from snownlp import SnowNLP
+from pyecharts import Bar
 
 
-def GetAlbum(art_id):
+def get_joker_album_info(art_id):
     """
     得到专辑信息
     :param art_id:
@@ -39,11 +38,11 @@ def GetAlbum(art_id):
     items = re.findall(pattern, html.text)
     cal = 0
     # 首先删除这个没文件，要不然每次都是追加
-    if (os.path.exists("专辑信息.txt")):
+    if (os.path.exists("./txt/专辑信息.txt")):
         os.remove("专辑信息.txt")
 
     # 删除文件避免每次都要重复写入
-    if (os.path.exists("专辑歌曲信息.txt")):
+    if (os.path.exists("./txt/专辑歌曲信息.txt")):
         os.remove("专辑歌曲信息.txt")
 
     for i in items:
@@ -53,7 +52,7 @@ def GetAlbum(art_id):
         # 这里在匹配里面使用了字符串，注意下
         pattern1 = re.compile(r'<a href="/album\?id=(.*?)" class="tit s-fc0">%s</a>' % (p))
         id1 = re.findall(pattern1, html.text)
-        with open("专辑信息.txt", 'a') as f:
+        with open("./txt/专辑信息.txt", 'a') as f:
             f.write(u'专辑的名字是:{}!!专辑的ID是{} \n'.format(i, id1))
             GetLyric1(i, id1[0])
             f.close()
@@ -85,7 +84,7 @@ def GetLyric1(album, id1):
         with open("薛之谦专辑歌曲信息.txt", 'a') as f:
             print(len(something))
             if (len(something) > 0):
-                f.write("薛之谦歌曲的名字是:%s!!歌曲的ID是%s\n" % (html_data2, items))
+                f.write(u'薛之谦歌曲的名字是:{}!!歌曲的ID是{}\n'.format(html_data2, items))
                 f.close()
 
 
@@ -96,7 +95,7 @@ def GetLyric2():
     for i in glob.glob("*歌曲名*"):
         os.remove(i)
     # 直接读取所有内容
-    file_object = open("薛之谦专辑歌曲信息.txt",'r')
+    file_object = open('薛之谦专辑歌曲信息.txt'.decode('utf-8'), 'r+')
     list_of_line = file_object.readlines()
 
     namelist = ""
@@ -109,34 +108,33 @@ def GetLyric2():
         items1 = str(re.findall(pattern1, i)).replace("[", "").replace("]", "").replace("'", "")
         items2 = str(re.findall(pattern2, i)).replace("[", "").replace("]", "").replace('"', "").replace("'", "")
 
-        print re.findall(pattern1, i)
+        headers = {
+            'Request URL': 'http://music.163.com/weapi/song/lyric?csrf_token=',
+            'Request Method': 'POST',
+            'Status Code': '200 OK',
+            'Remote Address': '59.111.160.195:80',
+            'Referrer Policy': 'no-referrer-when-downgrade'
+        }
+        urls = "http://music.163.com/api/song/lyric?" + "id=" + str(items2) + '&lv=1&kv=1&tv=-1'
+        html = requests.get(urls, headers=headers)
+        json_obj = html.text
+        j = json.loads(json_obj)
+        try:
+            lrc = j['lrc']['lyric']
+            pat = re.compile(r'\[.*\]')
+            lrc = re.sub(pat, "", lrc)
+            lrc = lrc.strip()
+            lrc = str(lrc)
+            print("歌曲名-{}.txt".format(str(items1).decode('string_escape')))
+            with open("歌曲名-{}.txt".format(str(items1).decode('string_escape')), 'a') as f:
+                f.write(lrc)
+                f.close()
+            namelist = namelist + str(items1).decode('string_escape') + ".txt" + ","
+            # 调用获取评论方法，并且把热评写入文件
+            GetCmmons(str(items1).decode('string_escape'), items2)
 
-        # headers = {
-        #     'Request URL': 'http://music.163.com/weapi/song/lyric?csrf_token=',
-        #     'Request Method': 'POST',
-        #     'Status Code': '200 OK',
-        #     'Remote Address': '59.111.160.195:80',
-        #     'Referrer Policy': 'no-referrer-when-downgrade'
-        # }
-        # urls = "http://music.163.com/api/song/lyric?" + "id=" + str(items2) + '&lv=1&kv=1&tv=-1'
-        # html = requests.get(urls, headers=headers)
-        # json_obj = html.text
-        # j = json.loads(json_obj)
-        # try:
-        #     lrc = j['lrc']['lyric']
-        #     pat = re.compile(r'\[.*\]')
-        #     lrc = re.sub(pat, "", lrc)
-        #     lrc = lrc.strip()
-        #     lrc = str(lrc)
-        #     print("歌曲名-{}.txt".format(items1))
-        # with open("歌曲名-{}.txt".format(items2), 'a') as f:
-        #     f.write(lrc)
-        #     f.close()
-        # namelist = namelist + items2 + ".txt" + ","
-        # # 调用获取评论方法，并且把热评写入文件
-        # GetCmmons(items2, items2)
-        # except:
-        #     print("歌曲有错误 %s !!" % (items1))
+        except:
+            print("歌曲有错误 %s !!" % (items1))
 
 
 def GetCmmons(song_name, id):
@@ -179,11 +177,167 @@ def GetCmmons(song_name, id):
             f.close()
 
 
+def MergedFile():
+    """
+    进行合文件操作
+    :return:
+    """
+    aaa = 0
+    for song_file_name in glob.glob("*歌曲名*"):
+        file_object = open(song_file_name, 'r', )
+        list_of_line = file_object.readlines()
+        for p in list_of_line:
+            if "作词" in p or "作曲" in p or "混音助理" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n" or "和声" in p or "吉他" in p or "录音助理" in p or "陈任佑鼓" in p or "薛之谦" in p:
+                aaa += 1
+            else:
+                with open("allLyric" + ".txt", "a") as f:
+                    f.write(p)
+                    f.write("\n")
+    file1 = open('allLyric.txt', 'r')  # 要去掉空行的文件
+    file2 = open('allLyric_analysis.txt', 'w')  # 生成没有空行的文件
+
+    try:
+        for line in file1.readlines():
+            if line == '\n':
+                line = line.strip("\n")
+            file2.write(line)
+    finally:
+        file1.close()
+        file2.close()
+
+
+def EmotionAnalysis():
+    xzhou = []
+    yzhou = []
+    for i in glob.glob("*歌曲名*"):
+        count = 0
+        allsen = 0
+        with open(i, 'r') as fileHandel:
+            fileList = fileHandel.readlines()
+            for p in fileList:
+                if "作词" in p or "作曲" in p or "鼓" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n":
+                    pass
+                else:
+                    s = SnowNLP(p)
+                    s1 = SnowNLP(s.sentences[0])
+                    # print(type(s1))
+                    count += 1
+                    allsen += s1.sentiments
+        i = str(i)
+        xzhou1 = i.split("-", 1)[1].split(".", 1)[0]
+        xzhou.append(xzhou1)
+        avg = allsen / count
+        yzhou.append(avg)
+        print("%s这首歌的情绪为%s" % (i, avg))
+        fileHandel.close()
+
+    bar = Bar("柱状图数据堆叠示例")
+    bar.add("薛之谦歌曲情绪可视化", xzhou, yzhou, is_stack=True, xaxis_interval=0, xzhou1_label_textsize=0)
+    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲情绪全部.html")
+    # 显示最好的前五首歌
+    import heapq
+    yzhou1 = heapq.nlargest(10, yzhou)
+    temp = map(yzhou.index, heapq.nlargest(10, yzhou))
+    temp = list(temp)
+    xzhou1 = []
+    for i in temp:
+        xzhou1.append(xzhou[i])
+    # 情绪前十首歌个图
+    bar = Bar("薛之谦歌曲情绪较好前十首歌")
+    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, is_stack=True)
+    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲最积极情绪top10.html")
+    # 显示最差的十首歌
+    yzhou1 = heapq.nsmallest(10, yzhou)
+    temp = map(yzhou.index, heapq.nsmallest(10, yzhou))
+    temp = list(temp)
+    xzhou1 = []
+    for i in temp:
+        xzhou1.append(xzhou[i])
+    # print(xzhou1)
+    # print(yzhou1)
+    # 情绪前十首歌个图
+    bar = Bar("薛之谦歌曲情绪较差前十首歌")
+    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, xaxis_interval=0, xzhou1_label_textsize=6)
+    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲最消极情绪top10.html")
+
+
+def splitSentence(inputFile, outputFile):
+    import jieba.analyse
+    fin = open(inputFile, 'r')
+    fout = open(outputFile, 'w')
+    for line in fin:
+        line = line.strip()
+        line = jieba.analyse.extract_tags(line)
+        outstr = " ".join(line)
+        fout.write(outstr + '\n')
+    fin.close()
+    fout.close()
+    # 下面的程序完成分析前十的数据出现的次数
+    f = open("分词过滤后.txt", 'r')
+    a = f.read().split()
+    info_data = sorted([(x, a.count(x)) for x in set(a)], key=lambda x: x[1], reverse=True)
+
+    for write_data in info_data:
+        with open("word.txt", 'a') as f:
+            f.write(u'{}\n'.format(write_data[0]))
+            f.close()
+
+
+def LyricAnalysis():
+    file = 'allLyric_analysis.txt'
+    # 这个技巧需要注意
+    alllyric = str([line.strip() for line in open('allLyric_analysis.txt').readlines()])
+    # 获取全部歌词，在一行里面
+    alllyric1 = alllyric.replace("'", "").replace(" ", "").replace("?", "").replace(",", "").replace('"', '').replace(
+        "?", "").replace(".", "").replace("!", "").replace(":", "")
+
+    # 在这里用结巴分词来分词过滤并且输出到一个文件里面，这个ting.txt
+    import jieba.analyse  # 这里必须引入
+    jieba.analyse.set_stop_words("ting.txt")
+    splitSentence('allLyric_analysis.txt', '分词过滤后.txt')
+    # 下面是词频统计
+    import collections
+    # 读取文本文件，把所有的汉字拆成一个list
+    f = open("分词过滤后.txt", 'r')  # 打开文件，并读取要处理的大段文字
+    txt1 = f.read()
+    txt1 = txt1.replace('\n', '')  # 删掉换行符
+    txt1 = txt1.replace(' ', '')  # 删掉换行符
+    txt1 = txt1.replace('.', '')  # 删掉逗号
+    txt1 = txt1.replace('.', '')  # 删掉句号
+    txt1 = txt1.replace('o', '')  # 删掉句号
+    mylist = list(txt1)
+    mycount = collections.Counter(mylist)
+    for key, val in mycount.most_common(10):  # 有序（返回前10个）
+        print(key, val)
+        # print(str(key).decode('string_escape'), val)
+
+
+def sort_serialize(data):
+    '''对数据字典进行排序'''
+    try:
+        return json.dumps(data, sort_keys=True, indent=4, ensure_ascii=False)
+    except Exception as e:
+        # print e
+        return None
+
+
+def wcdb():
+    a = 5
+    b = ++a
+    print(b)
+
+
 if __name__ == '__main__':
-    # testBeatiful()
-    # test_writ()
-    # GetLyric1("w", '2681139')
-    # GetAlbum(5781)
-    GetLyric2()
+    # 薛之谦的专辑ID是 5781
+    get_joker_album_info(5781)  # 得到专辑相关东西
+    # 根据专辑返回的东西  爬到相关歌曲和信息
+    # GetLyric2()
+    # MergedFile()  # 合并文件，进行分析操作
+    # EmotionAnalysis()
+
+    # LyricAnalysis()
+    # splitSentence('allLyric_analysis.txt', '分词过滤后.txt')
+    # 单独测试一个歌曲
     # GetCmmons('dw', 553543014)
     # GetLyric1(38388012)
+    # wordCloud.show_Joker_pic()
