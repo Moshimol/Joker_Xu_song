@@ -20,7 +20,7 @@
 | jieba |分词  |  无 |
 
  
- <center>**python包名如上图所示**</center>
+ <center>python包名如上图所示</center>
  
 <!--more-->
 
