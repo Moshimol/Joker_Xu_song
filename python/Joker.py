@@ -88,14 +88,14 @@ def get_joker_lyric_info(id1):
                 f.close()
 
 
-def GetLyric2():
+def get_song_comment():
     # 首先删除原来的文件，避免重复写入
     for i in glob.glob("*热评*"):
         os.remove(i)
     for i in glob.glob("*歌曲名*"):
         os.remove(i)
     # 直接读取所有内容
-    file_object = open('薛之谦专辑歌曲信息.txt'.decode('utf-8'), 'r+')
+    file_object = open('./txt/薛之谦专辑歌曲信息.txt'.decode('utf-8'), 'r+')
     list_of_line = file_object.readlines()
 
     namelist = ""
@@ -126,7 +126,7 @@ def GetLyric2():
             lrc = lrc.strip()
             lrc = str(lrc)
             print("歌曲名-{}.txt".format(str(items1).decode('string_escape')))
-            with open("歌曲名-{}.txt".format(str(items1).decode('string_escape')), 'a') as f:
+            with open("./txt/lyrics/歌曲名-{}.txt".format(str(items1).decode('string_escape')), 'a') as f:
                 f.write(lrc)
                 f.close()
             namelist = namelist + str(items1).decode('string_escape') + ".txt" + ","
@@ -169,7 +169,7 @@ def GetCmmons(song_name, id):
         username = uu["user"]['nickname']
         likedCount1 = str(uu['likedCount'])
         comments = uu['content']
-        with open(song_name + "专辑歌曲信息.txt", 'a') as f:
+        with open("./txt/comment/" + song_name + "专辑歌曲信息.txt", 'a') as f:
             f.write("用户名是 " + username + "\n")
             f.write("用户的评论是 " + comments + "\n")
             f.write("被点赞的次数是  " + str(likedCount1) + "\n")
@@ -183,18 +183,18 @@ def MergedFile():
     :return:
     """
     aaa = 0
-    for song_file_name in glob.glob("*歌曲名*"):
+    for song_file_name in glob.glob("./txt/lyrics/*歌曲名*"):
         file_object = open(song_file_name, 'r', )
         list_of_line = file_object.readlines()
         for p in list_of_line:
             if "作词" in p or "作曲" in p or "混音助理" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n" or "和声" in p or "吉他" in p or "录音助理" in p or "陈任佑鼓" in p or "薛之谦" in p:
                 aaa += 1
             else:
-                with open("allLyric" + ".txt", "a") as f:
+                with open("./txt/allLyric" + ".txt", "a") as f:
                     f.write(p)
                     f.write("\n")
-    file1 = open('allLyric.txt', 'r')  # 要去掉空行的文件
-    file2 = open('allLyric_analysis.txt', 'w')  # 生成没有空行的文件
+    file1 = open('./txt/allLyric.txt', 'r')  # 要去掉空行的文件
+    file2 = open('./txt/allLyric_analysis.txt', 'w')  # 生成没有空行的文件
 
     try:
         for line in file1.readlines():
@@ -329,10 +329,11 @@ def wcdb():
 
 if __name__ == '__main__':
     # 薛之谦的专辑ID是 5781
-    get_joker_album_info(5781)  # 得到专辑相关东西
+    # get_joker_album_info(5781)  # 得到专辑相关东西
     # 根据专辑返回的东西  爬到相关歌曲和信息
-    # GetLyric2()
-    # MergedFile()  # 合并文件，进行分析操作
+    # get_song_comment()
+
+    MergedFile()  # 合并文件，进行分析操作
     # EmotionAnalysis()
 
     # LyricAnalysis()
