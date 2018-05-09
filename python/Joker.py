@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup
 import glob
 from snownlp import SnowNLP
 from pyecharts import Bar
-
+import random
+import wordCloud
 
 def get_joker_album_info(art_id):
     """
@@ -187,7 +188,7 @@ def MergedFile():
         file_object = open(song_file_name, 'r', )
         list_of_line = file_object.readlines()
         for p in list_of_line:
-            if "作词" in p or "作曲" in p or "混音助理" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n" or "和声" in p or "吉他" in p or "录音助理" in p or "陈任佑鼓" in p or "薛之谦" in p:
+            if "作词" in p or "作曲" in p or "混音助理" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n" or "和声" in p or "吉他" in p or "录音助理" in p or "陈任佑鼓" in p or "薛之谦" in p or "薛" in p:
                 aaa += 1
             else:
                 with open("./txt/allLyric" + ".txt", "a") as f:
@@ -207,45 +208,57 @@ def MergedFile():
 
 
 def EmotionAnalysis():
+    """
+    分析情感
+    :return:
+    """
     xzhou = []
     yzhou = []
-    for i in glob.glob("*歌曲名*"):
+    for i in glob.glob("./txt/lyrics/*歌曲名*"):
         count = 0
         allsen = 0
         with open(i, 'r') as fileHandel:
             fileList = fileHandel.readlines()
             for p in fileList:
-                if "作词" in p or "作曲" in p or "鼓" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n":
+                if "作词" in p or "作曲" in p or "混音助理" in p or "混音师" in p or "录音师" in p or "执行制作" in p or "编曲" in p or "制作人" in p or "录音工程" in p or "录音室" in p or "混音录音室" in p or "混音工程" in p or "Programmer" in p or p == "\n" or "和声" in p or "吉他" in p or "录音助理" in p or "陈任佑鼓" in p or "薛之谦" in p or "薛" in p:
                     pass
                 else:
                     s = SnowNLP(p)
                     s1 = SnowNLP(s.sentences[0])
-                    # print(type(s1))
                     count += 1
                     allsen += s1.sentiments
         i = str(i)
         xzhou1 = i.split("-", 1)[1].split(".", 1)[0]
         xzhou.append(xzhou1)
         avg = allsen / count
+        if avg == 0.5:
+            avg = avg + round(random.uniform(0, 0.001), 4)
         yzhou.append(avg)
-        print("%s这首歌的情绪为%s" % (i, avg))
+        # print("%s这首歌的情绪为%s" % (i, avg))
         fileHandel.close()
 
     bar = Bar("柱状图数据堆叠示例")
     bar.add("薛之谦歌曲情绪可视化", xzhou, yzhou, is_stack=True, xaxis_interval=0, xzhou1_label_textsize=0)
-    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲情绪全部.html")
+    bar.render(r"./html/薛之谦歌曲情绪全部.html")
+
     # 显示最好的前五首歌
     import heapq
+    print '*' * 10
+    print yzhou
+    print sorted(yzhou, reverse=True)[:10]
+
     yzhou1 = heapq.nlargest(10, yzhou)
+
     temp = map(yzhou.index, heapq.nlargest(10, yzhou))
     temp = list(temp)
+    print temp
     xzhou1 = []
     for i in temp:
         xzhou1.append(xzhou[i])
     # 情绪前十首歌个图
     bar = Bar("薛之谦歌曲情绪较好前十首歌")
-    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, is_stack=True)
-    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲最积极情绪top10.html")
+    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, is_stack=True, facecolor='lightskyblue', edgecolor='white')
+    bar.render(r"./html/薛之谦歌曲最积极情绪top10.html")
     # 显示最差的十首歌
     yzhou1 = heapq.nsmallest(10, yzhou)
     temp = map(yzhou.index, heapq.nsmallest(10, yzhou))
@@ -257,8 +270,9 @@ def EmotionAnalysis():
     # print(yzhou1)
     # 情绪前十首歌个图
     bar = Bar("薛之谦歌曲情绪较差前十首歌")
-    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, xaxis_interval=0, xzhou1_label_textsize=6)
-    bar.render(r"/Users/hengyuan/Desktop/api/fe/html/薛之谦歌曲最消极情绪top10.html")
+    bar.add("薛之谦歌曲情绪可视化", xzhou1, yzhou1, xaxis_interval=0, xzhou1_label_textsize=6, facecolor='yellowgreen',
+            edgecolor='white')
+    bar.render(r"./html/薛之谦歌曲最消极情绪top10.html")
 
 
 def splitSentence(inputFile, outputFile):
@@ -284,17 +298,17 @@ def splitSentence(inputFile, outputFile):
 
 
 def LyricAnalysis():
-    file = 'allLyric_analysis.txt'
+    file = './txt/allLyric_analysis.txt'
     # 这个技巧需要注意
-    alllyric = str([line.strip() for line in open('allLyric_analysis.txt').readlines()])
+    alllyric = str([line.strip() for line in open('./txt/allLyric_analysis.txt').readlines()])
     # 获取全部歌词，在一行里面
     alllyric1 = alllyric.replace("'", "").replace(" ", "").replace("?", "").replace(",", "").replace('"', '').replace(
         "?", "").replace(".", "").replace("!", "").replace(":", "")
 
     # 在这里用结巴分词来分词过滤并且输出到一个文件里面，这个ting.txt
     import jieba.analyse  # 这里必须引入
-    jieba.analyse.set_stop_words("ting.txt")
-    splitSentence('allLyric_analysis.txt', '分词过滤后.txt')
+    jieba.analyse.set_stop_words("./txt/ting.txt")
+    splitSentence('./txt/allLyric_analysis.txt', './txt/分词过滤后.txt')
     # 下面是词频统计
     import collections
     # 读取文本文件，把所有的汉字拆成一个list
@@ -309,7 +323,7 @@ def LyricAnalysis():
     mycount = collections.Counter(mylist)
     for key, val in mycount.most_common(10):  # 有序（返回前10个）
         print(key, val)
-        # print(str(key).decode('string_escape'), val)
+        print(str(key).decode('string_escape'), val)
 
 
 def sort_serialize(data):
@@ -321,23 +335,17 @@ def sort_serialize(data):
         return None
 
 
-def wcdb():
-    a = 5
-    b = ++a
-    print(b)
-
-
 if __name__ == '__main__':
     # 薛之谦的专辑ID是 5781
     # get_joker_album_info(5781)  # 得到专辑相关东西
     # 根据专辑返回的东西  爬到相关歌曲和信息
     # get_song_comment()
 
-    MergedFile()  # 合并文件，进行分析操作
+    # MergedFile()  # 合并文件，进行分析操作
     # EmotionAnalysis()
 
     # LyricAnalysis()
-    # splitSentence('allLyric_analysis.txt', '分词过滤后.txt')
+    wordCloud.show_Joker_pic()
     # 单独测试一个歌曲
     # GetCmmons('dw', 553543014)
     # GetLyric1(38388012)
