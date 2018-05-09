@@ -54,14 +54,14 @@ def get_joker_album_info(art_id):
         id1 = re.findall(pattern1, html.text)
         with open("./txt/专辑信息.txt", 'a') as f:
             f.write(u'专辑的名字是:{}!!专辑的ID是{} \n'.format(i, id1))
-            GetLyric1(i, id1[0])
+            get_joker_lyric_info(id1[0])
             f.close()
 
     print("总数是%d" % (cal))
     print("获取专辑以及专辑ID成功！！！！！")
 
 
-def GetLyric1(album, id1):
+def get_joker_lyric_info(id1):
     urls3 = "http://music.163.com/#/album?id={}".format(id1)
     print(urls3)
     # 将不要需要的符号去掉
@@ -81,7 +81,7 @@ def GetLyric1(album, id1):
     for something in string_array:
         html_data2 = something.find("a").text
         items = re.findall(r"\d+\.?\d*", str(something))
-        with open("薛之谦专辑歌曲信息.txt", 'a') as f:
+        with open("./txt/薛之谦专辑歌曲信息.txt", 'a') as f:
             print(len(something))
             if (len(something) > 0):
                 f.write(u'薛之谦歌曲的名字是:{}!!歌曲的ID是{}\n'.format(html_data2, items))
