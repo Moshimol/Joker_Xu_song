@@ -213,9 +213,11 @@ def show_Joker_pic():
 
 **github地址**[项目地址](https://github.com/Moshimol/Joker_Xu_song)
 
-本人联系方式微信
+##### 本人联系方式微信
 
-![联系方式](https://raw.githubusercontent.com/Moshimol/Joker_Xu_song/master/python/word_pic/wechat_pic.png)
+<center>
+<img src="https://raw.githubusercontent.com/Moshimol/Joker_Xu_song/master/python/word_pic/wechat_pic.png" width="40%" height="40%" />
+</center>
 
 
 
